@@ -1,0 +1,34 @@
+[project]
+name = "x-commit"
+version = "0.1.0"
+description = "GitHub commit analyzer with Claude AI and Slack integration"
+readme = "README.md"
+authors = [
+    { name = "rick", email = "rick@caveduck.io" }
+]
+requires-python = ">=3.11"
+dependencies = [
+    "anthropic>=0.40.0",
+    "PyGithub>=2.5.0",
+    "slack-bolt>=1.21.2",
+    "slack-sdk>=3.37.0",
+    "click>=8.1.7",
+    "python-dotenv>=1.0.0",
+    "rich>=13.9.4",
+    "flask>=3.0.0",
+]
+
+[project.scripts]
+x-commit = "x_commit.cli:main"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3.4",
+    "pytest-asyncio>=0.25.2",
+    "black>=24.10.0",
+    "ruff>=0.8.4",
+]
+
+[build-system]
+requires = ["uv_build>=0.8.8,<0.9.0"]
+build-backend = "uv_build"
