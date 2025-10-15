@@ -96,38 +96,32 @@ class ClaudeClient:
 {diff}
 ```
 
-## 요청사항
-다음 형식으로 분석 결과를 작성해주세요:
+## 분석 가이드라인
 
-### 1. 요약 (3-4문장)
-이 커밋의 핵심 목적과 주요 변경사항을 간단히 설명하세요.
+**먼저 변경사항의 규모와 성격을 평가하세요:**
 
-### 2. 주요 변경사항
-각 파일별로 어떤 변경이 있었는지 구체적으로 설명하세요:
-- 파일명: 변경 내용 설명
-- 새로운 기능, 버그 수정, 리팩토링 등을 명확히 구분
-- 중요한 로직 변경사항 강조
+1. **간단한 변경 (주석 추가, 포맷팅, 파일 삭제, 오타 수정, 로그 추가 등)**
+   - 1-2문장으로 간결하게 요약만 제공
+   - 예: "로그 메시지 추가 및 주석 개선"
+   - 섹션 구분 없이 핵심만 전달
 
-### 3. 기술적 세부사항
-- 사용된 기술, 라이브러리, 패턴
-- 아키텍처 변경사항
-- 성능에 영향을 줄 수 있는 변경사항
+2. **중간 규모 변경 (작은 기능 추가, 버그 수정, 간단한 리팩토링)**
+   - 요약 (2-3문장)
+   - 주요 변경사항 (간단하게)
+   - 필요시 주의사항만 추가
 
-### 4. 주의사항 (해당하는 경우)
-- 잠재적 버그나 이슈
-- 테스트가 필요한 부분
-- 다른 팀원이 알아야 할 중요한 정보
-- Breaking changes
+3. **중요한 변경 (새로운 기능, 아키텍처 변경, 중요한 버그 수정)**
+   - 요약 (3-4문장)
+   - 주요 변경사항 (상세)
+   - 기술적 세부사항
+   - 주의사항 및 Breaking changes
+   - 필요시 후속 작업 제안
 
-### 5. 후속 작업 제안 (선택사항)
-필요하다면 추가로 해야 할 작업이나 개선점을 제안하세요.
-
----
-
-**참고사항:**
+## 작성 원칙
+- **간단한 변경은 과도하게 분석하지 마세요** - 1-2문장이면 충분합니다
 - 코드의 의도를 파악하여 "무엇을" 했는지보다 "왜" 했는지를 설명하세요
-- 기술적이지 않은 팀원도 이해할 수 있도록 명확하게 작성하세요
-- 불필요한 세부사항은 생략하고 핵심만 전달하세요
+- 명확하고 간결하게 핵심만 전달하세요
+- 변경의 중요도에 비례하여 분석 분량을 조절하세요
 - 긍정적이고 건설적인 톤을 유지하세요
 """
         return prompt
@@ -166,37 +160,32 @@ class ClaudeClient:
 {diff}
 ```
 
-## Analysis Format
+## Analysis Guidelines
 
-### 1. Summary (3-4 sentences)
-Briefly explain the core purpose and main changes of this commit.
+**First, evaluate the scope and nature of the changes:**
 
-### 2. Key Changes
-Describe changes for each file:
-- Filename: Description of changes
-- Clearly distinguish between new features, bug fixes, refactoring, etc.
-- Highlight important logic changes
+1. **Simple changes (comments, formatting, file deletion, typo fixes, logging, etc.)**
+   - Provide only a brief 1-2 sentence summary
+   - Example: "Added logging messages and improved comments"
+   - No section breakdown needed, just the essence
 
-### 3. Technical Details
-- Technologies, libraries, patterns used
-- Architecture changes
-- Performance impact
+2. **Medium changes (small feature additions, bug fixes, simple refactoring)**
+   - Summary (2-3 sentences)
+   - Key changes (brief)
+   - Cautions if necessary
 
-### 4. Cautions (if applicable)
-- Potential bugs or issues
-- Areas requiring testing
-- Important information for team members
-- Breaking changes
+3. **Significant changes (new features, architecture changes, critical bug fixes)**
+   - Summary (3-4 sentences)
+   - Key changes (detailed)
+   - Technical details
+   - Cautions and breaking changes
+   - Follow-up suggestions if needed
 
-### 5. Follow-up Suggestions (optional)
-Suggest additional work or improvements if needed.
-
----
-
-**Guidelines:**
+## Writing Principles
+- **Don't over-analyze simple changes** - 1-2 sentences is enough
 - Explain "why" rather than just "what"
-- Write clearly for non-technical team members
-- Focus on essentials, skip unnecessary details
+- Be clear and concise, focus on essentials
+- Scale analysis length proportionally to change importance
 - Maintain a positive and constructive tone
 """
 

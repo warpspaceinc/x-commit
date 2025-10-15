@@ -121,33 +121,57 @@ class CommitAnalyzerBot:
 
                 # Check if message has GitHub commit URL in attachments
                 # GitHub Slack app uses attachments for commit messages
-                commit = None
+                commits = []
+                full_message_text = ""
+
+                # Debug: Log the full event structure
+                logger.debug(f"Full event data: {event}")
 
                 # First check attachments (GitHub Slack app uses these)
                 if "attachments" in event:
+                    logger.debug(f"Attachments found: {event['attachments']}")
                     for attachment in event["attachments"]:
                         # Check various fields in attachment
                         for field in ["text", "fallback", "title", "title_link", "pretext"]:
                             if field in attachment:
-                                commit = self.parser.parse_message(str(attachment[field]))
-                                if commit:
-                                    logger.debug(f"Found commit URL in attachment.{field}")
-                                    break
-                        if commit:
-                            break
+                                full_message_text += str(attachment[field]) + " "
 
-                # Also check message text as fallback
-                if not commit:
-                    message_text = event.get("text", "")
-                    commit = self.parser.parse_message(message_text)
-                    if commit:
-                        logger.debug("Found commit URL in message text")
+                # Also check message text
+                message_text = event.get("text", "")
+                full_message_text += message_text
 
-                if commit:
+                logger.info(f"Full message text for parsing: {full_message_text[:200]}")
+
+                # Extract all commits from the combined message text
+                if full_message_text.strip():
+                    commits = self.parser.extract_all_commits(full_message_text)
+                    if commits:
+                        logger.info(f"Found {len(commits)} commit(s) in message from channel {channel}")
+
+                # Filter commits by target branches if configured
+                if self.config.slack_target_branches:
+                    filtered_commits = []
+                    for commit in commits:
+                        if commit.branch:
+                            # Check if branch matches target branches
+                            if commit.branch in self.config.slack_target_branches:
+                                filtered_commits.append(commit)
+                                logger.info(f"Commit {commit.sha[:8]} is from target branch: {commit.branch}")
+                            else:
+                                logger.info(f"Skipping commit {commit.sha[:8]} from non-target branch: {commit.branch}")
+                        else:
+                            # No branch info available, skip this commit
+                            logger.info(f"Skipping commit {commit.sha[:8]} - no branch information available")
+
+                    commits = filtered_commits
+                    if not commits:
+                        logger.info(f"No commits match target branches: {', '.join(self.config.slack_target_branches)}")
+
+                # Analyze each commit in a separate thread
+                for commit in commits:
                     logger.info(
                         f"Auto-analyzing commit {commit.sha[:8]} from channel {channel}"
                     )
-                    # Analyze the commit in a thread
                     threading.Thread(
                         target=self._analyze_and_post,
                         args=(commit, channel, event.get("ts")),

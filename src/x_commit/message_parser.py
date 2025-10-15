@@ -38,6 +38,12 @@ class MessageParser:
         re.IGNORECASE
     )
 
+    # GitHub Slack app new format: "1 new commit pushed to _branch_ by author"
+    GITHUB_SLACK_NEW_FORMAT = re.compile(
+        r"pushed\s+to\s+[_*]?(?P<branch>[^_*\s]+)[_*]?\s+by\s+(?P<author>\S+)",
+        re.IGNORECASE
+    )
+
     # Markdown link format: [text](url)
     MARKDOWN_LINK_PATTERN = re.compile(
         r"\[([^\]]+)\]\((?P<url>https?://github\.com/[^/]+/[^/]+/commit/[a-f0-9]+)\)",
@@ -228,7 +234,44 @@ class MessageParser:
         commits = []
         seen_shas = set()
 
-        # Find all commit URLs in the message
+        # Extract branch and author from new GitHub Slack format
+        branch_info = None
+        new_format_match = self.GITHUB_SLACK_NEW_FORMAT.search(message)
+        if new_format_match:
+            branch_info = {
+                "branch": new_format_match.group("branch"),
+                "author": new_format_match.group("author"),
+            }
+
+        # First try to parse GitHub Slack app format (includes branch info)
+        for match in self.GITHUB_SLACK_FORMAT.finditer(message):
+            url = match.group("url")
+            commit_info = self._extract_url_components(url)
+
+            if not commit_info:
+                continue
+
+            sha = commit_info["sha"]
+
+            # Avoid duplicates
+            if sha in seen_shas:
+                continue
+
+            seen_shas.add(sha)
+
+            commits.append(
+                ParsedCommit(
+                    owner=commit_info["owner"],
+                    repo=commit_info["repo"],
+                    sha=sha,
+                    commit_url=url,
+                    branch=match.group("branch"),
+                    author=match.group("author"),
+                    message=match.group("message"),
+                )
+            )
+
+        # Then find any remaining commit URLs and apply branch info from new format
         for match in self.COMMIT_URL_PATTERN.finditer(message):
             owner = match.group("owner")
             repo = match.group("repo")
@@ -241,12 +284,15 @@ class MessageParser:
             seen_shas.add(sha)
             commit_url = f"https://github.com/{owner}/{repo}/commit/{sha}"
 
+            # Apply branch info from new format if available
             commits.append(
                 ParsedCommit(
                     owner=owner,
                     repo=repo,
                     sha=sha,
                     commit_url=commit_url,
+                    branch=branch_info["branch"] if branch_info else None,
+                    author=branch_info["author"] if branch_info else None,
                 )
             )
 

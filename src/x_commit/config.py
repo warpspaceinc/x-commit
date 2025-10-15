@@ -29,6 +29,7 @@ class Config:
     slack_app_token: Optional[str] = None
     slack_channel: Optional[str] = None
     slack_auto_analyze: bool = False  # If True, auto-analyze all commits; If False, only respond to @mentions
+    slack_target_branches: Optional[list[str]] = None  # If set, only analyze commits from these branches
 
     # Application settings
     log_level: str = "INFO"
@@ -55,6 +56,12 @@ class Config:
         output_dir = Path(os.getenv("OUTPUT_DIR", "./reports"))
         output_dir.mkdir(parents=True, exist_ok=True)
 
+        # Parse target branches (comma-separated list)
+        target_branches = None
+        branches_env = os.getenv("SLACK_TARGET_BRANCHES")
+        if branches_env:
+            target_branches = [b.strip() for b in branches_env.split(",") if b.strip()]
+
         return cls(
             github_token=github_token,
             anthropic_api_key=anthropic_api_key,
@@ -65,6 +72,7 @@ class Config:
             slack_app_token=os.getenv("SLACK_APP_TOKEN"),
             slack_channel=os.getenv("SLACK_CHANNEL"),
             slack_auto_analyze=os.getenv("SLACK_AUTO_ANALYZE", "false").lower() in ("true", "1", "yes"),
+            slack_target_branches=target_branches,
             log_level=os.getenv("LOG_LEVEL", "INFO"),
             output_dir=output_dir,
             max_diff_lines=int(os.getenv("MAX_DIFF_LINES", "1000")),

@@ -363,6 +363,11 @@ def serve(mode: str, port: int):
     else:
         console.print("  Monitoring: All channels (no filter)")
 
+    if config.slack_target_branches:
+        console.print(f"  Target branches: [bold cyan]{', '.join(config.slack_target_branches)}[/bold cyan]")
+    else:
+        console.print("  Target branches: All branches")
+
     try:
         from .bot import create_bot
 
