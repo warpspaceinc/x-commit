@@ -99,19 +99,24 @@ class CommitAnalyzerBot:
             @self.app.event("message")
             def handle_message(event, client, logger):
                 """Handle GitHub commit messages - auto-analyze mode."""
+                # Log all incoming messages for debugging
+                channel = event.get("channel")
+                logger.info(f"Received message event from channel: {channel}")
+
                 # Ignore threaded messages (replies)
                 if event.get("thread_ts"):
+                    logger.debug(f"Skipping threaded message in channel {channel}")
                     return
 
                 # Only process messages from configured channel if set
-                channel = event.get("channel")
                 if self.target_channel_id:
                     # Match by channel ID or try to get channel name and match
                     if channel != self.target_channel_id:
                         # If target is not an ID (e.g., "commits"), try to match channel name
                         # This requires fetching channel info, but we can skip for now
                         # and just compare IDs since Slack always sends channel IDs in events
-                        logger.debug(f"Skipping message from channel {channel}, not matching target {self.target_channel_id}")
+                        logger.info(f"Skipping message from channel {channel}, not matching target {self.target_channel_id}")
+                        logger.info(f"To fix: Set SLACK_CHANNEL={channel} in .env if this is the correct channel")
                         return
 
                 # Check if message has GitHub commit URL in attachments
