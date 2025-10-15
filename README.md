@@ -198,37 +198,6 @@ SLACK_CHANNEL=#commits  # 또는 채널 ID (예: C08GS45FD8W)
 - **Date**: 2025-01-15 14:30:00
 - **Files Changed**: 8 files (+990 -42)
 
-### 커밋 메시지
-```
-스킬 코드 리팩토링
-```
-
-## 🔍 AI 분석 결과
-
-### 1. 요약
-이 커밋은 게임의 스킬 시스템을 전면 리팩토링하여...
-
-### 2. 주요 변경사항
-- **elements/player.js**: 시간 스케일링 및 스킬 통합
-- **elements/skills/MagnetSkill.js**: 자석 패시브 스킬 구현 (신규)
-...
-
-### 3. 기술적 세부사항
-- Strategy 패턴으로 스킬 분리
-- PIXI.js 그래픽 렌더링
-...
-
-### 4. 주의사항
-- 하위 호환성 유지를 위한 fallback 코드 존재
-- 위성 각도 초기화 개선 필요
-...
-
-### 5. 후속 작업 제안
-- 기존 스킬 코드 제거
-- 상수 정의로 매직 넘버 제거
-...
-```
-
 ### Slack 출력
 
 봇이 쓰레드에 다음과 같이 분석 결과를 포스팅합니다:
@@ -385,24 +354,6 @@ uv run x-commit analyze https://github.com/torvalds/linux/commit/abc123def
 uv run x-commit --log-level DEBUG serve
 ```
 
-## 참고 문서
-
-- [PLAN.md](PLAN.md) - 상세 개발 계획
-- [SLACK_BOT.md](SLACK_BOT.md) - Slack Bot 동작 방식 및 설정
-- [TESTING.md](TESTING.md) - 테스트 가이드
-
-## 기여
-
-기여는 언제나 환영합니다! Pull Request를 보내주세요.
-
-## 라이선스
-
-MIT License
-
 ## 문의
 
 이슈나 질문이 있으시면 GitHub Issues를 이용해주세요.
-
----
-
-**Made with ❤️ using Claude AI**
