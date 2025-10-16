@@ -10,6 +10,7 @@ from slack_sdk.errors import SlackApiError
 
 from .analyzer import CommitAnalyzer
 from .config import get_config
+from .ignore_patterns import IgnorePatternManager
 from .message_parser import MessageParser
 from .slack_client import SlackClient
 
@@ -42,6 +43,7 @@ class CommitAnalyzerBot:
         self.slack_client = SlackClient()
         self.analyzer = CommitAnalyzer()
         self.parser = MessageParser()
+        self.ignore_manager = IgnorePatternManager(self.config.ignore_file_path)
 
         # Resolve channel ID if channel name is provided
         self.target_channel_id = None
@@ -141,6 +143,12 @@ class CommitAnalyzerBot:
                 full_message_text += message_text
 
                 logger.info(f"Full message text for parsing: {full_message_text[:200]}")
+
+                # Check if message matches ignore patterns
+                should_ignore, matched_pattern = self.ignore_manager.should_ignore(full_message_text)
+                if should_ignore:
+                    logger.info(f"Message matches ignore pattern '{matched_pattern}', skipping analysis")
+                    return
 
                 # Extract all commits from the combined message text
                 if full_message_text.strip():

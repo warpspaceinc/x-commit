@@ -35,6 +35,7 @@ class Config:
     log_level: str = "INFO"
     output_dir: Path = Path("./reports")
     max_diff_lines: int = 1000
+    ignore_file_path: Path = Path(".xcommitignore")  # Path to ignore patterns file
 
     @classmethod
     def from_env(cls) -> "Config":
@@ -76,6 +77,7 @@ class Config:
             log_level=os.getenv("LOG_LEVEL", "INFO"),
             output_dir=output_dir,
             max_diff_lines=int(os.getenv("MAX_DIFF_LINES", "1000")),
+            ignore_file_path=Path(os.getenv("XCOMMIT_IGNORE_FILE", ".xcommitignore")),
         )
 
 

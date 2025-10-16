@@ -160,6 +160,39 @@ SLACK_CHANNEL=#commits  # 또는 채널 ID (예: C08GS45FD8W)
 
 > **참고**: 자동 분석 모드에서는 `message` 이벤트 구독이 필요합니다. Slack 앱 설정에서 "Event Subscriptions" → "Subscribe to bot events"에 `message.channels` 이벤트를 추가하세요.
 
+#### 커밋 메시지 필터링 (.xcommitignore)
+
+특정 패턴의 커밋 메시지를 자동으로 무시하도록 설정할 수 있습니다. 프로젝트 루트에 `.xcommitignore` 파일을 생성하여 제외할 패턴을 정의하세요.
+
+**파일 형식:**
+```
+# 주석은 # 으로 시작
+# 빈 줄은 무시됨
+
+# 문자열 패턴 (대소문자 무시, 부분 일치)
+Merge branch
+Merge pull request
+WIP:
+[skip ci]
+
+# 정규표현식 패턴 (regex: 접두사 사용)
+regex:^Merge\s+(branch|pull request)
+regex:\[skip\s*analyze\]
+```
+
+**기본 제공 패턴:**
+- `Merge branch` - 머지 커밋 제외
+- `Merge pull request` - PR 머지 커밋 제외
+- `WIP:`, `[WIP]` - 작업 중인 커밋 제외
+- `[skip ci]`, `[ci skip]` - CI 스킵 커밋 제외
+- `Bumped version`, `Updated dependencies` - 자동 생성 커밋 제외
+
+**환경변수 설정:**
+```bash
+# .env
+XCOMMIT_IGNORE_FILE=.xcommitignore  # 기본값, 다른 경로 지정 가능
+```
+
 #### Slack에서 사용하기
 
 **멘션 모드 사용법**
@@ -238,11 +271,13 @@ x-commit/
 │       ├── claude_client.py    # Claude API 클라이언트
 │       ├── slack_client.py     # Slack API 클라이언트
 │       ├── message_parser.py   # 메시지 파싱
+│       ├── ignore_patterns.py  # 패턴 기반 필터링
 │       ├── formatter.py        # 출력 포맷터
 │       └── config.py           # 설정 관리
 ├── reports/                    # 생성된 리포트 (기본값)
 ├── .env                        # 환경 변수 (git ignore)
 ├── .env.example               # 환경 변수 템플릿
+├── .xcommitignore             # 무시할 커밋 패턴
 ├── pyproject.toml             # 프로젝트 설정
 ├── PLAN.md                    # 개발 계획
 ├── SLACK_BOT.md              # Slack Bot 상세 가이드

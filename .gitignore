@@ -31,6 +31,8 @@ Thumbs.db
 .pytest_cache/
 .coverage
 htmlcov/
+.xcommitignore.test*
+test_ignore_patterns.py
 
 # Logs
 *.log
@@ -43,3 +45,4 @@ uv.lock
 TESTING.md
 SLACK_BOT.md
 CLAUDE.md
+.xcommitignore
