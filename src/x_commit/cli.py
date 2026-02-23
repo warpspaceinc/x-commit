@@ -133,16 +133,16 @@ def analyze(
 
         # Fetch and analyze commit
         try:
-            progress.update(task, description="Fetching commit from GitHub...")
+            progress.update(task, description="Fetching and analyzing commit...")
 
             if is_url:
-                commit_info, file_changes = analyzer.github_client.get_commit_by_url(
-                    commit
+                commit_info, analysis, from_cache = analyzer.analyze_by_url(
+                    commit, lang
                 )
             else:
                 owner, repo_name = repo.split("/")
-                commit_info, file_changes = analyzer.github_client.get_commit(
-                    owner, repo_name, commit
+                commit_info, analysis, from_cache = analyzer.analyze_by_sha(
+                    owner, repo_name, commit, lang
                 )
 
             console.print(
@@ -156,15 +156,23 @@ def analyze(
                 f"(+{commit_info.additions} -{commit_info.deletions})"
             )
 
-            progress.update(task, description="Analyzing with Claude AI...")
-            analysis = analyzer._analyze_commit(commit_info, file_changes, lang)
-
-            console.print(
-                f"[green]{ConsoleFormatter.format_success('Analysis completed')}[/green]"
-            )
+            if from_cache:
+                console.print(
+                    f"[cyan]{ConsoleFormatter.format_info('Analysis loaded from cache')}[/cyan]"
+                )
+            else:
+                console.print(
+                    f"[green]{ConsoleFormatter.format_success('Analysis completed')}[/green]"
+                )
 
             # Generate report
             progress.update(task, description="Generating report...")
+
+            # Fetch file changes for report formatting
+            repo_owner, repo_name_for_report = commit_info.repository.split("/")
+            _, file_changes = analyzer.github_client.get_commit(
+                repo_owner, repo_name_for_report, commit_info.sha
+            )
 
             if stdout:
                 # Print to stdout
@@ -483,6 +491,66 @@ def config_check():
         console.print(f"[red][ERROR] Configuration error: {e}[/red]")
         console.print("\n[yellow]Hint: Copy .env.example to .env and fill in your API keys.[/yellow]")
         sys.exit(1)
+
+
+@cli.group()
+def cache():
+    """Manage the analysis cache."""
+    pass
+
+
+@cache.command()
+def stats():
+    """Show cache statistics."""
+    from .cache import AnalysisCache
+    from .config import get_config
+
+    config = get_config()
+    db_path = config.cache_dir / "analysis.db"
+
+    if not db_path.exists():
+        console.print("[yellow]Cache database does not exist yet.[/yellow]")
+        console.print(f"  Path: {db_path}")
+        return
+
+    analysis_cache = AnalysisCache(db_path)
+    info = analysis_cache.stats()
+
+    console.print("[bold]Cache Statistics[/bold]\n")
+    console.print(f"  Total entries: {info['total_entries']}")
+    console.print(f"  Database path: {info['db_path']}")
+
+    size = info["db_size_bytes"]
+    if size < 1024:
+        size_str = f"{size} B"
+    elif size < 1024 * 1024:
+        size_str = f"{size / 1024:.1f} KB"
+    else:
+        size_str = f"{size / (1024 * 1024):.1f} MB"
+    console.print(f"  Database size: {size_str}")
+
+    if info["oldest_entry"]:
+        console.print(f"  Oldest entry: {info['oldest_entry']}")
+    if info["newest_entry"]:
+        console.print(f"  Newest entry: {info['newest_entry']}")
+
+
+@cache.command()
+def clear():
+    """Clear all cached analysis results."""
+    from .cache import AnalysisCache
+    from .config import get_config
+
+    config = get_config()
+    db_path = config.cache_dir / "analysis.db"
+
+    if not db_path.exists():
+        console.print("[yellow]Cache database does not exist yet. Nothing to clear.[/yellow]")
+        return
+
+    analysis_cache = AnalysisCache(db_path)
+    count = analysis_cache.clear()
+    console.print(f"[green]Cache cleared: {count} entries deleted.[/green]")
 
 
 def main():

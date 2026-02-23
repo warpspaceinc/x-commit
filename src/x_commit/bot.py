@@ -332,17 +332,17 @@ class CommitAnalyzerBot:
             except Exception as e:
                 logger.warning(f"Failed to add reaction: {e}")
 
-            # Analyze the commit
+            # Analyze the commit (with cache)
             logger.info(f"Analyzing commit {commit.sha[:8]}...")
-            commit_info, file_changes = self.analyzer.github_client.get_commit(
-                commit.owner, commit.repo, commit.sha
+            commit_info, analysis, from_cache = self.analyzer.analyze_by_sha(
+                commit.owner, commit.repo, commit.sha, "korean"
             )
 
-            analysis = self.analyzer._analyze_commit(
-                commit_info, file_changes, "korean"
-            )
-
-            logger.info(f"Analysis completed for {commit.sha[:8]}")
+            if from_cache:
+                logger.info(f"Cache hit for {commit.sha[:8]}")
+                analysis = f"[cached]\n{analysis}"
+            else:
+                logger.info(f"Analysis completed for {commit.sha[:8]}")
 
             # Update progress message with result
             self.slack_client.post_analysis_result(
@@ -358,14 +358,13 @@ class CommitAnalyzerBot:
                 except Exception as e:
                     logger.warning(f"Failed to delete progress message: {e}")
 
-            # Change reaction to check mark
+            # Change reaction to check mark (or recycle for cached)
             try:
                 self.slack_client.client.reactions_remove(
                     channel=channel, timestamp=thread_ts, name="mag"
                 )
-                self.slack_client.add_reaction(
-                    channel, thread_ts, "white_check_mark"
-                )
+                reaction = "recycle" if from_cache else "white_check_mark"
+                self.slack_client.add_reaction(channel, thread_ts, reaction)
             except Exception as e:
                 logger.warning(f"Failed to update reaction: {e}")
 

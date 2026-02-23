@@ -36,6 +36,7 @@ class Config:
     output_dir: Path = Path("./reports")
     max_diff_lines: int = 1000
     ignore_file_path: Path = Path(".xcommitignore")  # Path to ignore patterns file
+    cache_dir: Path = Path.home() / ".x-commit" / "cache"
 
     @classmethod
     def from_env(cls) -> "Config":
@@ -78,6 +79,7 @@ class Config:
             output_dir=output_dir,
             max_diff_lines=int(os.getenv("MAX_DIFF_LINES", "1000")),
             ignore_file_path=Path(os.getenv("XCOMMIT_IGNORE_FILE", ".xcommitignore")),
+            cache_dir=Path(os.getenv("XCOMMIT_CACHE_DIR", str(Path.home() / ".x-commit" / "cache"))),
         )
 
 
