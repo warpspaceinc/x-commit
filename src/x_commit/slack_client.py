@@ -96,6 +96,8 @@ class SlackClient:
         commit_info: CommitInfo,
         analysis: str,
         model: str,
+        input_tokens: int | None = None,
+        output_tokens: int | None = None,
     ) -> dict:
         """Post a commit analysis result to Slack.
 
@@ -105,11 +107,15 @@ class SlackClient:
             commit_info: Commit information
             analysis: Analysis text from Claude
             model: Claude model name
+            input_tokens: Number of input tokens used
+            output_tokens: Number of output tokens used
 
         Returns:
             Response from Slack API
         """
-        message = MarkdownFormatter.format_slack_message(commit_info, analysis, model)
+        message = MarkdownFormatter.format_slack_message(
+            commit_info, analysis, model, input_tokens, output_tokens
+        )
         return self.post_message(channel, message, thread_ts)
 
     def post_progress_message(self, channel: str, thread_ts: str) -> dict:

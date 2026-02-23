@@ -1,9 +1,40 @@
 """Formatters for output generation."""
 
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 
 from .github_client import CommitInfo, FileChange
+
+# 모델별 토큰 단가 (USD per 1M tokens) - input / output
+# https://docs.anthropic.com/en/docs/about-claude/models#model-comparison-table
+MODEL_PRICING = {
+    "claude-opus-4": {"input": 15.0, "output": 75.0},
+    "claude-sonnet-4": {"input": 3.0, "output": 15.0},
+    "claude-sonnet-4-5": {"input": 3.0, "output": 15.0},
+    "claude-haiku-3-5": {"input": 0.80, "output": 4.0},
+}
+
+
+def _get_model_pricing(model_id: str) -> dict:
+    """모델 ID에서 가격 정보를 찾는다. 정확한 매칭이 안 되면 prefix 매칭."""
+    for key in MODEL_PRICING:
+        if key in model_id:
+            return MODEL_PRICING[key]
+    # 알 수 없는 모델은 Sonnet 단가를 기본값으로
+    return MODEL_PRICING["claude-sonnet-4"]
+
+
+def format_cost_summary(input_tokens: int, output_tokens: int, model_id: str) -> str:
+    """토큰 사용량과 비용을 포맷팅한다."""
+    pricing = _get_model_pricing(model_id)
+    input_cost = (input_tokens / 1_000_000) * pricing["input"]
+    output_cost = (output_tokens / 1_000_000) * pricing["output"]
+    total_cost = input_cost + output_cost
+    return (
+        f"📊 `{model_id}` | "
+        f"input: `{input_tokens:,}` · output: `{output_tokens:,}` tokens | "
+        f"💰 `${total_cost:.4f}`"
+    )
 
 
 class MarkdownFormatter:
@@ -86,7 +117,11 @@ class MarkdownFormatter:
 
     @staticmethod
     def format_slack_message(
-        commit_info: CommitInfo, analysis: str, model: str
+        commit_info: CommitInfo,
+        analysis: str,
+        model: str,
+        input_tokens: Optional[int] = None,
+        output_tokens: Optional[int] = None,
     ) -> str:
         """Format analysis for Slack message.
 
@@ -94,6 +129,8 @@ class MarkdownFormatter:
             commit_info: Commit information
             analysis: Claude's analysis text
             model: Claude model used
+            input_tokens: Number of input tokens used
+            output_tokens: Number of output tokens used
 
         Returns:
             Formatted message for Slack
@@ -122,12 +159,17 @@ class MarkdownFormatter:
             message = message[:max_length] + "\n\n...(메시지가 너무 길어 생략되었습니다)"
             truncated = True
 
-        # Add footer
-        footer = f"\n\n_분석 모델: {model}_"
+        # Add footer with cost summary
+        footer_parts = []
         if truncated:
-            footer += " | _일부 내용이 생략되었습니다_"
+            footer_parts.append("_일부 내용이 생략되었습니다_")
 
-        message += footer
+        if input_tokens is not None and output_tokens is not None:
+            footer_parts.append(format_cost_summary(input_tokens, output_tokens, model))
+        else:
+            footer_parts.append(f"_분석 모델: {model}_")
+
+        message += "\n\n---\n" + "\n".join(footer_parts)
 
         return message
 

@@ -1,6 +1,7 @@
 """Claude API client for analyzing commit changes."""
 
 import logging
+from dataclasses import dataclass
 from typing import Optional
 
 from anthropic import Anthropic
@@ -8,6 +9,15 @@ from anthropic import Anthropic
 from .config import get_config
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class AnalysisResult:
+    """Result of a Claude API analysis call."""
+
+    text: str
+    input_tokens: int
+    output_tokens: int
 
 
 class ClaudeClient:
@@ -33,7 +43,7 @@ class ClaudeClient:
         repository: str,
         author: str,
         max_tokens: int = 4000,
-    ) -> str:
+    ) -> AnalysisResult:
         """Analyze a commit using Claude.
 
         Args:
@@ -44,7 +54,7 @@ class ClaudeClient:
             max_tokens: Maximum tokens in response
 
         Returns:
-            Analysis result as markdown text
+            AnalysisResult with text and token usage
         """
         logger.info(f"Analyzing commit for {repository}")
 
@@ -66,15 +76,21 @@ class ClaudeClient:
 
             # Extract text from response
             analysis = response.content[0].text
+            input_tokens = response.usage.input_tokens
+            output_tokens = response.usage.output_tokens
 
             # Log token usage
             logger.info(
                 f"Claude API call completed. "
-                f"Input tokens: {response.usage.input_tokens}, "
-                f"Output tokens: {response.usage.output_tokens}"
+                f"Input tokens: {input_tokens}, "
+                f"Output tokens: {output_tokens}"
             )
 
-            return analysis
+            return AnalysisResult(
+                text=analysis,
+                input_tokens=input_tokens,
+                output_tokens=output_tokens,
+            )
 
         except Exception as e:
             logger.error(f"Failed to analyze commit with Claude: {e}")
@@ -133,7 +149,7 @@ class ClaudeClient:
         repository: str,
         author: str,
         max_tokens: int = 4000,
-    ) -> str:
+    ) -> AnalysisResult:
         """Analyze a commit using Claude (English version).
 
         Args:
@@ -144,7 +160,7 @@ class ClaudeClient:
             max_tokens: Maximum tokens in response
 
         Returns:
-            Analysis result as markdown text
+            AnalysisResult with text and token usage
         """
         logger.info(f"Analyzing commit for {repository} (English)")
 
@@ -202,13 +218,20 @@ class ClaudeClient:
             )
 
             analysis = response.content[0].text
+            input_tokens = response.usage.input_tokens
+            output_tokens = response.usage.output_tokens
+
             logger.info(
                 f"Claude API call completed. "
-                f"Input tokens: {response.usage.input_tokens}, "
-                f"Output tokens: {response.usage.output_tokens}"
+                f"Input tokens: {input_tokens}, "
+                f"Output tokens: {output_tokens}"
             )
 
-            return analysis
+            return AnalysisResult(
+                text=analysis,
+                input_tokens=input_tokens,
+                output_tokens=output_tokens,
+            )
 
         except Exception as e:
             logger.error(f"Failed to analyze commit with Claude: {e}")

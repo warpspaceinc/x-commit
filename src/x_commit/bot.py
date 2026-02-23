@@ -334,20 +334,27 @@ class CommitAnalyzerBot:
 
             # Analyze the commit (with cache)
             logger.info(f"Analyzing commit {commit.sha[:8]}...")
-            commit_info, analysis, from_cache = self.analyzer.analyze_by_sha(
+            commit_info, result, from_cache = self.analyzer.analyze_by_sha(
                 commit.owner, commit.repo, commit.sha, "korean"
             )
 
             if from_cache:
                 logger.info(f"Cache hit for {commit.sha[:8]}")
-                analysis = f"[cached]\n{analysis}"
             else:
                 logger.info(f"Analysis completed for {commit.sha[:8]}")
 
             # Update progress message with result
-            self.slack_client.post_analysis_result(
-                channel, thread_ts, commit_info, analysis, self.config.claude_model
-            )
+            # Only include token usage for non-cached results
+            if from_cache:
+                self.slack_client.post_analysis_result(
+                    channel, thread_ts, commit_info, result.text, self.config.claude_model,
+                )
+            else:
+                self.slack_client.post_analysis_result(
+                    channel, thread_ts, commit_info, result.text, self.config.claude_model,
+                    input_tokens=result.input_tokens,
+                    output_tokens=result.output_tokens,
+                )
 
             # Remove progress message if it exists
             if progress_ts:

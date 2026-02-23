@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Optional, Tuple
 
 from .cache import AnalysisCache
-from .claude_client import ClaudeClient
+from .claude_client import AnalysisResult, ClaudeClient
 from .config import get_config
 from .formatter import MarkdownFormatter
 from .github_client import CommitInfo, FileChange, GitHubClient
@@ -36,7 +36,7 @@ class CommitAnalyzer:
 
     def analyze_by_url(
         self, commit_url: str, language: str = "korean"
-    ) -> Tuple[CommitInfo, str, bool]:
+    ) -> Tuple[CommitInfo, AnalysisResult, bool]:
         """Analyze a commit by its GitHub URL.
 
         Args:
@@ -44,7 +44,7 @@ class CommitAnalyzer:
             language: Language for analysis ('korean' or 'english')
 
         Returns:
-            Tuple of (CommitInfo, analysis_text, cached)
+            Tuple of (CommitInfo, AnalysisResult, cached)
         """
         logger.info(f"Starting analysis for URL: {commit_url}")
 
@@ -55,17 +55,17 @@ class CommitAnalyzer:
         owner, repo = commit_info.repository.split("/")
         cached = self.cache.get(owner, repo, commit_info.sha)
         if cached is not None:
-            return commit_info, cached, True
+            return commit_info, AnalysisResult(text=cached, input_tokens=0, output_tokens=0), True
 
         # Analyze the commit
-        analysis = self._analyze_commit(commit_info, file_changes, language)
-        self.cache.put(owner, repo, commit_info.sha, analysis, self.claude_client.model)
+        result = self._analyze_commit(commit_info, file_changes, language)
+        self.cache.put(owner, repo, commit_info.sha, result.text, self.claude_client.model)
 
-        return commit_info, analysis, False
+        return commit_info, result, False
 
     def analyze_by_sha(
         self, owner: str, repo: str, sha: str, language: str = "korean"
-    ) -> Tuple[CommitInfo, str, bool]:
+    ) -> Tuple[CommitInfo, AnalysisResult, bool]:
         """Analyze a commit by repository and SHA.
 
         Args:
@@ -75,7 +75,7 @@ class CommitAnalyzer:
             language: Language for analysis ('korean' or 'english')
 
         Returns:
-            Tuple of (CommitInfo, analysis_text, cached)
+            Tuple of (CommitInfo, AnalysisResult, cached)
         """
         logger.info(f"Starting analysis for {owner}/{repo}@{sha}")
 
@@ -83,20 +83,20 @@ class CommitAnalyzer:
         cached = self.cache.get(owner, repo, sha)
         if cached is not None:
             commit_info, _ = self.github_client.get_commit(owner, repo, sha)
-            return commit_info, cached, True
+            return commit_info, AnalysisResult(text=cached, input_tokens=0, output_tokens=0), True
 
         # Fetch commit from GitHub
         commit_info, file_changes = self.github_client.get_commit(owner, repo, sha)
 
         # Analyze the commit
-        analysis = self._analyze_commit(commit_info, file_changes, language)
-        self.cache.put(owner, repo, sha, analysis, self.claude_client.model)
+        result = self._analyze_commit(commit_info, file_changes, language)
+        self.cache.put(owner, repo, sha, result.text, self.claude_client.model)
 
-        return commit_info, analysis, False
+        return commit_info, result, False
 
     def _analyze_commit(
         self, commit_info: CommitInfo, file_changes: list[FileChange], language: str
-    ) -> str:
+    ) -> AnalysisResult:
         """Perform the actual analysis using Claude.
 
         Args:
@@ -105,28 +105,28 @@ class CommitAnalyzer:
             language: Language for analysis
 
         Returns:
-            Analysis text
+            AnalysisResult with text and token usage
         """
         # Format the diff
         diff = self.github_client.format_diff(file_changes)
 
         # Get analysis from Claude
         if language.lower() == "english":
-            analysis = self.claude_client.analyze_commit_english(
+            result = self.claude_client.analyze_commit_english(
                 commit_message=commit_info.message,
                 diff=diff,
                 repository=commit_info.repository,
                 author=commit_info.author_name,
             )
         else:
-            analysis = self.claude_client.analyze_commit(
+            result = self.claude_client.analyze_commit(
                 commit_message=commit_info.message,
                 diff=diff,
                 repository=commit_info.repository,
                 author=commit_info.author_name,
             )
 
-        return analysis
+        return result
 
     def generate_report(
         self,
@@ -181,13 +181,13 @@ class CommitAnalyzer:
             The generated report content
         """
         # Analyze with cache
-        commit_info, analysis, _ = self.analyze_by_url(commit_url, language)
+        commit_info, result, _ = self.analyze_by_url(commit_url, language)
 
         # Fetch file changes for report formatting
         owner, repo = commit_info.repository.split("/")
         _, file_changes = self.github_client.get_commit(owner, repo, commit_info.sha)
 
         # Generate and optionally save the report
-        report = self.generate_report(commit_info, file_changes, analysis, output_path)
+        report = self.generate_report(commit_info, file_changes, result.text, output_path)
 
         return report

@@ -136,12 +136,12 @@ def analyze(
             progress.update(task, description="Fetching and analyzing commit...")
 
             if is_url:
-                commit_info, analysis, from_cache = analyzer.analyze_by_url(
+                commit_info, result, from_cache = analyzer.analyze_by_url(
                     commit, lang
                 )
             else:
                 owner, repo_name = repo.split("/")
-                commit_info, analysis, from_cache = analyzer.analyze_by_sha(
+                commit_info, result, from_cache = analyzer.analyze_by_sha(
                     owner, repo_name, commit, lang
                 )
 
@@ -177,7 +177,7 @@ def analyze(
             if stdout:
                 # Print to stdout
                 report = analyzer.generate_report(
-                    commit_info, file_changes, analysis, None
+                    commit_info, file_changes, result.text, None
                 )
                 console.print("\n" + "=" * 80)
                 console.print(report)
@@ -191,7 +191,7 @@ def analyze(
                     output = config.output_dir / filename
 
                 report = analyzer.generate_report(
-                    commit_info, file_changes, analysis, output
+                    commit_info, file_changes, result.text, output
                 )
 
                 console.print(
